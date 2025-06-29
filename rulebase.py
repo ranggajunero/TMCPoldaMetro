@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import plotly.express as px
+import numpy as np
 
 st.set_page_config(layout="wide")
 st.title("Dashboard Lalu Lintas Jakarta")
@@ -12,31 +13,32 @@ with open("hasil_rule_base_inner_TMCPoldaMetro.json") as f:
 
 df = pd.DataFrame(data)
 
-# Ubah kolom TIME ke datetime agar bisa ambil jam
-df["JAM"] = pd.to_datetime(df["TIME"], format="%H:%M:%S").dt.hour
+import numpy as np
 
-# --- Visualisasi 1: Frekuensi laporan per jam (0–23 lengkap) ---
-st.subheader("1. Frekuensi Laporan per Jam")
+st.subheader("1. Frekuensi Laporan per Jam (0–23)")
 
-# Konversi ke datetime jam
-df["JAM"] = pd.to_datetime(df["TIME"], format="%H:%M:%S").dt.hour
+# Coba parsing TIME ke datetime, abaikan error
+df["JAM"] = pd.to_datetime(df["TIME"], format="%H:%M:%S", errors="coerce").dt.hour
 
 # Buat urutan jam 0–23
-all_hours = pd.Series(range(24), name="JAM")
+jam_range = pd.DataFrame({"JAM": np.arange(0, 24)})
 jam_count = df["JAM"].value_counts().sort_index()
-jam_count_full = all_hours.to_frame().merge(
+jam_count_full = jam_range.merge(
     jam_count.rename("Jumlah"), on="JAM", how="left"
 ).fillna(0)
+
+# Pastikan JAM berupa int, Jumlah berupa int
+jam_count_full["Jumlah"] = jam_count_full["Jumlah"].astype(int)
 
 # Grafik
 fig_jam = px.bar(
     jam_count_full,
     x="JAM",
     y="Jumlah",
-    labels={"JAM": "Jam", "Jumlah": "Jumlah Laporan"},
-    title="Jumlah Laporan Lalu Lintas per Jam (0–23)",
+    labels={"JAM": "Jam (0–23)", "Jumlah": "Jumlah Laporan"},
+    title="Jumlah Laporan Lalu Lintas per Jam"
 )
-fig_jam.update_xaxes(dtick=1)  # Tampilkan semua jam
+fig_jam.update_xaxes(dtick=1)  # Tampilkan semua jam 0–23
 st.plotly_chart(fig_jam, use_container_width=True)
 
 # ---- Visualisasi 2: Lokasi paling padat (berdasarkan status padat) ----
