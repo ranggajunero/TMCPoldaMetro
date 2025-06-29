@@ -15,15 +15,28 @@ df = pd.DataFrame(data)
 # Ubah kolom TIME ke datetime agar bisa ambil jam
 df["JAM"] = pd.to_datetime(df["TIME"], format="%H:%M:%S").dt.hour
 
-# ---- Visualisasi 1: Frekuensi laporan per jam ----
+# --- Visualisasi 1: Frekuensi laporan per jam (0–23 lengkap) ---
 st.subheader("1. Frekuensi Laporan per Jam")
+
+# Konversi ke datetime jam
+df["JAM"] = pd.to_datetime(df["TIME"], format="%H:%M:%S").dt.hour
+
+# Buat urutan jam 0–23
+all_hours = pd.Series(range(24), name="JAM")
 jam_count = df["JAM"].value_counts().sort_index()
+jam_count_full = all_hours.to_frame().merge(
+    jam_count.rename("Jumlah"), on="JAM", how="left"
+).fillna(0)
+
+# Grafik
 fig_jam = px.bar(
-    x=jam_count.index,
-    y=jam_count.values,
-    labels={"x": "Jam", "y": "Jumlah"},
-    title="Jumlah Laporan Lalu Lintas per Jam"
+    jam_count_full,
+    x="JAM",
+    y="Jumlah",
+    labels={"JAM": "Jam", "Jumlah": "Jumlah Laporan"},
+    title="Jumlah Laporan Lalu Lintas per Jam (0–23)",
 )
+fig_jam.update_xaxes(dtick=1)  # Tampilkan semua jam
 st.plotly_chart(fig_jam, use_container_width=True)
 
 # ---- Visualisasi 2: Lokasi paling padat (berdasarkan status padat) ----
