@@ -4,8 +4,8 @@ import json
 import plotly.express as px
 
 st.title("Dashboard Lalu Lintas Jakarta")
+st.markdown("Data dari @TMCPoldaMetro")
 
-# Load JSON
 with open("hasil_rule_base_inner_TMCPoldaMetro.json") as f:
     data = json.load(f)
 
@@ -17,6 +17,6 @@ status_count = df["STATUS"].dropna().value_counts()
 fig = px.pie(names=status_count.index, values=status_count.values)
 st.plotly_chart(fig)
 
-# Tabel data mentah
+# Tabel
 st.subheader("Data Mentah")
 st.dataframe(df)
