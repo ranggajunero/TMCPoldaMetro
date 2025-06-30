@@ -71,7 +71,7 @@ def plot_penyebab_kemacetan(df):
 st.title("🚦 Dashboard Analisis Lalu Lintas Jakarta")
 
 # Memuat data menggunakan fungsi yang sudah di-cache
-df = load_data("laporan_lalulintas_hasil.json") # Ganti nama file jika berbeda
+df = load_data("hasil_rule_base_inner_TMCPoldaMetro.json") # Ganti nama file jika berbeda
 
 if df is not None:
     # --- Sidebar untuk Filter ---
