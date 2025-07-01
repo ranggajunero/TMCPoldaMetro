@@ -3,14 +3,14 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 
-# --- Konfigurasi Halaman (selalu di baris pertama) ---
+# --- Konfigurasi Halaman (tidak berubah) ---
 st.set_page_config(
     layout="wide",
     page_title="Dashboard Lalu Lintas Jakarta",
     page_icon="🚦"
 )
 
-# --- Fungsi untuk Memuat Data (dengan Caching) ---
+# --- Fungsi untuk Memuat Data (tidak berubah) ---
 @st.cache_data
 def load_data(file_path):
     """Memuat data dari file JSON dan melakukan pra-pemrosesan dasar."""
@@ -27,16 +27,39 @@ def load_data(file_path):
         return None
 
 # --- Fungsi-fungsi untuk Membuat Plot/Grafik ---
-# (Tidak ada perubahan di sini, semua fungsi plot tetap sama)
-def plot_laporan_per_jam(df):
+
+# ======================================================================
+# === PERUBAHAN #1: Modifikasi fungsi plot laporan per jam ===
+# ======================================================================
+def plot_laporan_per_jam(df, chart_type='Bar Chart'):
+    """Membuat dan menampilkan bar chart ATAU line chart laporan per jam."""
     st.subheader("1. Frekuensi Laporan per Jam")
+    
     jam_counts = df['JAM'].dropna().value_counts().sort_index()
     jam_range = pd.Series(0, index=np.arange(0, 24))
     jam_counts_full = (jam_counts + jam_range).fillna(0).astype(int)
-    fig = px.bar(x=jam_counts_full.index, y=jam_counts_full.values, labels={"x": "Jam (0–23)", "y": "Jumlah Laporan"}, title="Jumlah Laporan Lalu Lintas per Jam")
+
+    # Logika untuk memilih jenis grafik berdasarkan input pengguna
+    if chart_type == 'Bar Chart':
+        fig = px.bar(
+            x=jam_counts_full.index,
+            y=jam_counts_full.values,
+            labels={"x": "Jam (0–23)", "y": "Jumlah Laporan"},
+            title="Jumlah Laporan Lalu Lintas per Jam"
+        )
+    elif chart_type == 'Line Chart':
+        fig = px.line(
+            x=jam_counts_full.index,
+            y=jam_counts_full.values,
+            labels={"x": "Jam (0–23)", "y": "Jumlah Laporan"},
+            title="Tren Laporan Lalu Lintas per Jam",
+            markers=True # Tambahkan titik pada setiap jam
+        )
+    
     fig.update_xaxes(dtick=1)
     st.plotly_chart(fig, use_container_width=True)
 
+# (Fungsi-fungsi plot lainnya tidak berubah)
 def plot_status_pie(df):
     st.subheader("2. Distribusi Status Lalu Lintas")
     status_count = df["STATUS"].dropna().value_counts()
@@ -70,72 +93,58 @@ def plot_penyebab_kemacetan(df):
 
 st.title("🚦 Dashboard Analisis Lalu Lintas Jakarta")
 
-# Memuat data menggunakan fungsi yang sudah di-cache
-df = load_data("hasil_rule_base_inner_TMCPoldaMetro.json") # Ganti nama file jika berbeda
+df = load_data("laporan_lalulintas_hasil.json")
 
 if df is not None:
-    # --- Sidebar untuk Filter ---
-    st.sidebar.header("Filter Data")
+    # --- Sidebar untuk Filter dan Opsi ---
+    st.sidebar.header("Filter & Opsi Tampilan")
     
-    # --- BLOK FILTER BARU ---
-    
-    # Filter 1: Berdasarkan status lalu lintas
+    # Filter status
     status_unik = df['STATUS'].dropna().unique()
-    status_pilihan = st.sidebar.multiselect(
-        "Pilih Status Lalu Lintas:",
-        options=["Semua Status"] + list(status_unik),
-        default="Semua Status"
-    )
+    status_pilihan = st.sidebar.multiselect("Pilih Status Lalu Lintas:", options=["Semua Status"] + list(status_unik), default="Semua Status")
 
-    # Filter 2: Berdasarkan penyebab (obstacle)
+    # Filter obstacle
     obstacle_unik = df['OBSTACLE'].dropna().unique()
-    obstacle_pilihan = st.sidebar.multiselect(
-        "Pilih Jenis Hambatan:",
-        options=["Semua Hambatan"] + list(obstacle_unik),
-        default="Semua Hambatan"
-    )
+    obstacle_pilihan = st.sidebar.multiselect("Pilih Jenis Hambatan:", options=["Semua Hambatan"] + list(obstacle_unik), default="Semua Hambatan")
 
-    # Filter 3: Berdasarkan rentang jam
-    jam_pilihan = st.sidebar.slider(
-        "Pilih Rentang Jam:",
-        min_value=0,
-        max_value=23,
-        value=(0, 23) # Defaultnya adalah seluruh jam
-    )
+    # Filter jam
+    jam_pilihan = st.sidebar.slider("Pilih Rentang Jam:", min_value=0, max_value=23, value=(0, 23))
     st.sidebar.info(f"Data ditampilkan untuk jam {jam_pilihan[0]}:00 hingga {jam_pilihan[1]}:59.")
     
-    # --- LOGIKA FILTER BERANTAI ---
-    # Mulai dengan DataFrame utuh
-    df_filtered = df
+    # ======================================================================
+    # === PERUBAHAN #2: Tambahkan widget untuk memilih jenis chart ===
+    # ======================================================================
+    st.sidebar.markdown("---") # Garis pemisah
+    st.sidebar.subheader("Opsi Visualisasi")
+    tipe_chart_jam = st.sidebar.selectbox(
+        "Pilih Tampilan Grafik Laporan per Jam:",
+        ('Bar Chart', 'Line Chart')
+    )
 
-    # Terapkan filter status
+    # --- Logika Filter Berantai (tidak berubah) ---
+    df_filtered = df
     if "Semua Status" not in status_pilihan and status_pilihan:
         df_filtered = df_filtered[df_filtered['STATUS'].isin(status_pilihan)]
-
-    # Terapkan filter obstacle pada hasil filter sebelumnya
     if "Semua Hambatan" not in obstacle_pilihan and obstacle_pilihan:
         df_filtered = df_filtered[df_filtered['OBSTACLE'].isin(obstacle_pilihan)]
-        
-    # Terapkan filter jam pada hasil filter sebelumnya
-    # .between() sangat efisien untuk rentang numerik
     df_filtered = df_filtered[df_filtered['JAM'].between(jam_pilihan[0], jam_pilihan[1])]
 
     # --- Tampilan Utama Dashboard ---
     st.header("Visualisasi Data")
-    
-    # Membuat dua kolom utama
     col1, col2 = st.columns(2)
 
     with col1:
-        plot_laporan_per_jam(df_filtered)
+        # ======================================================================
+        # === PERUBAHAN #3: Teruskan pilihan pengguna ke fungsi plot ===
+        # ======================================================================
+        plot_laporan_per_jam(df_filtered, chart_type=tipe_chart_jam)
         plot_top_lokasi(df_filtered, f"Top 10 Lokasi untuk Filter Terpilih")
 
     with col2:
-        # Pie chart tetap menampilkan distribusi keseluruhan agar ada perbandingan
-        plot_status_pie(df) 
+        plot_status_pie(df)
         plot_penyebab_kemacetan(df_filtered)
 
-    # Tampilkan Data Mentah yang sudah difilter
+    # --- Tampilkan Data Mentah (tidak berubah) ---
     st.subheader("Tabel Data Laporan (Hasil Filter)")
     st.info(f"Menampilkan {len(df_filtered)} baris dari total {len(df)} laporan.")
     st.dataframe(df_filtered)
