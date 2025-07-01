@@ -93,7 +93,7 @@ def plot_penyebab_kemacetan(df):
 
 st.title("🚦 Dashboard Analisis Lalu Lintas Jakarta")
 
-df = load_data("laporan_lalulintas_hasil.json")
+df = load_data("hasil_rule_base_inner_TMCPoldaMetro.json")
 
 if df is not None:
     # --- Sidebar untuk Filter dan Opsi ---
