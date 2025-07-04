@@ -150,7 +150,7 @@ if df is not None:
     with tab2:
         # Tab kedua berisi analisis rute yang lebih detail dan tabel data
         st.info("Chart ini hanya menampilkan rute di mana laporan memiliki informasi 'FROM' dan 'TO' yang lengkap.")
-        plot_top_rute(df_filtered, "Top 10 Rute Paling Sering Dilaporkan", chart_type=tipe_chart_rute)
+        plot_top_rute(df_filtered, "Rute Terbanyak", chart_type=tipe_chart_rute)
         
         st.subheader("Tabel Data Laporan (Hasil Filter)")
         st.info(f"Menampilkan {len(df_filtered)} baris dari total {len(df)} laporan.")
